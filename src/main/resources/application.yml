@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: assivito-shop
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/assivitoshop
+    username: root
+    password: toortoor
+  jpa:
+    hibernate.ddl-auto: update
+    generate-ddl: true
+    show-sql: true
+  mail:
+    host: localhost
+    port: 25
+
+server:
+  port: 8080
+
+# Encryption configuration
+encryption:
+  salt:
+    rounds: 10
+
+# JWT configuration
+jwt:
+  algorithm:
+    key: up4CYOpa1ijGa4/gpU1Vdq09WUEEa9CwEKsjkWx41i8
+  issuer: assivitoshop
+  expiryInSeconds: 604800
+
+# Email configuration
+email:
+  from: no-reply@assivitoshop.com
+
+# General configuration
+app:
+  frontend:
+    url: http://assivitoshop.com
+
+# SMTP configuration
+
