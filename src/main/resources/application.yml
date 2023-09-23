@@ -3,7 +3,7 @@ spring:
     name: assivito-shop
   datasource:
     driverClassName: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/assivitoshop
+    url: jdbc:mysql://localhost:3306/assivitoshop?useUnicode=true&characterEncoding=UTF-8
     username: root
     password: toortoor
   jpa:
@@ -21,7 +21,6 @@ server:
 encryption:
   salt:
     rounds: 10
-
 # JWT configuration
 jwt:
   algorithm:

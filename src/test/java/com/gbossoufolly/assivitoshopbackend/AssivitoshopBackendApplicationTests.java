@@ -10,4 +10,5 @@ class AssivitoshopBackendApplicationTests {
 	void contextLoads() {
 	}
 
+
 }

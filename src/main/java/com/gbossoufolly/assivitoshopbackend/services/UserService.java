@@ -1,8 +1,10 @@
 package com.gbossoufolly.assivitoshopbackend.services;
 
 import com.gbossoufolly.assivitoshopbackend.api.models.LoginBody;
+import com.gbossoufolly.assivitoshopbackend.api.models.PasswordResetBody;
 import com.gbossoufolly.assivitoshopbackend.api.models.RegistrationBody;
 import com.gbossoufolly.assivitoshopbackend.exceptions.EmailFailureException;
+import com.gbossoufolly.assivitoshopbackend.exceptions.EmailNotFoundException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserAlreadyExistsException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserNotVerifiedException;
 import com.gbossoufolly.assivitoshopbackend.models.LocalUser;
@@ -24,8 +26,9 @@ public class UserService {
     private final EncryptionService encryptionService;
     private final JWTService jwtService;
     private final EmailService emailService;
-    public UserService(LocalUserRepository userRepository, VerificationTokenRepository verificationTokenRepository, EncryptionService encryptionService, JWTService jwtService,
-                       EmailService emailService) {
+
+    public UserService(LocalUserRepository userRepository, VerificationTokenRepository verificationTokenRepository,
+                       EncryptionService encryptionService, JWTService jwtService, EmailService emailService) {
         this.localUserRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.encryptionService = encryptionService;
@@ -102,5 +105,26 @@ public class UserService {
             }
         }
         return false;
+    }
+
+    public void forgotPassword(String email) throws EmailNotFoundException {
+        Optional<LocalUser> opUser = localUserRepository.findByEmailIgnoreCase(email);
+        if(opUser.isPresent()) {
+            LocalUser user = opUser.get();
+            String token = jwtService.generatePasswordResetJWT(user);
+            emailService.sendPasswordResetEmail(user, token);
+        } else {
+            throw new EmailNotFoundException();
+        }
+    }
+
+    public void resetPassword(PasswordResetBody body) {
+        String email = jwtService.getResetPasswordEmail(body.getToken());
+        Optional<LocalUser> opUser = localUserRepository.findByEmailIgnoreCase(email);
+        if(opUser.isPresent()) {
+            LocalUser user = opUser.get();
+            user.setPassword(encryptionService.encryptPassword(body.getPassword()));
+            localUserRepository.save(user);
+        }
     }
 }

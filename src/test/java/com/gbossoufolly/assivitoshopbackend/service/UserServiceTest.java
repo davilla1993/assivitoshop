@@ -1,12 +1,18 @@
 package com.gbossoufolly.assivitoshopbackend.service;
 
 import com.gbossoufolly.assivitoshopbackend.api.models.LoginBody;
+import com.gbossoufolly.assivitoshopbackend.api.models.PasswordResetBody;
 import com.gbossoufolly.assivitoshopbackend.api.models.RegistrationBody;
 import com.gbossoufolly.assivitoshopbackend.exceptions.EmailFailureException;
+import com.gbossoufolly.assivitoshopbackend.exceptions.EmailNotFoundException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserAlreadyExistsException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserNotVerifiedException;
+import com.gbossoufolly.assivitoshopbackend.models.LocalUser;
 import com.gbossoufolly.assivitoshopbackend.models.VerificationToken;
+import com.gbossoufolly.assivitoshopbackend.repository.LocalUserRepository;
 import com.gbossoufolly.assivitoshopbackend.repository.VerificationTokenRepository;
+import com.gbossoufolly.assivitoshopbackend.services.EncryptionService;
+import com.gbossoufolly.assivitoshopbackend.services.JWTService;
 import com.gbossoufolly.assivitoshopbackend.services.UserService;
 import com.icegreen.greenmail.configuration.GreenMailConfiguration;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
@@ -17,12 +23,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 public class UserServiceTest {
 
     @RegisterExtension
@@ -30,9 +39,18 @@ public class UserServiceTest {
             .withConfiguration(GreenMailConfiguration.aConfig().withUser("testmail", "secret"))
             .withPerMethodLifecycle(true);
 
+
+    @Autowired
+    private MockMvc mockMvc;
+
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private JWTService jwtService;
+    @Autowired
+    private LocalUserRepository localUserRepository;
+    @Autowired
+    private EncryptionService encryptionService;
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
 
@@ -102,6 +120,30 @@ public class UserServiceTest {
             Assertions.assertTrue(userService.verifyUser(token), "Token should be valid.");
             Assertions.assertNotNull(body, "The user should now be verified.");
         }
+    }
+
+    @Test
+    @Transactional
+    public void testForgotPassword() throws MessagingException {
+        Assertions.assertThrows(EmailNotFoundException.class,
+                () -> userService.forgotPassword("UserNotExist@junit.com"));
+        Assertions.assertDoesNotThrow(() -> userService.forgotPassword("UserA@junit.com"),
+                "Non existing email should be rejected.");
+        Assertions.assertEquals("UserA@junit.com", greenMailExtension.getReceivedMessages()[0]
+                .getRecipients(Message.RecipientType.TO)[0].toString(),
+                "Password reset email should be sent");
+    }
+
+    public void testResetPassword() {
+        LocalUser user = localUserRepository.findByUsernameIgnoreCase("UserA").get();
+        String token = jwtService.generatePasswordResetJWT(user);
+        PasswordResetBody body = new PasswordResetBody();
+        body.setToken(token);
+        body.setPassword("Password@02");
+        userService.resetPassword(body);
+        user = localUserRepository.findByUsernameIgnoreCase("UserA").get();
+        Assertions.assertTrue(encryptionService.verifyPassword("Password@02",
+                user.getPassword()), "Password change should be written to DB");
     }
 }
 

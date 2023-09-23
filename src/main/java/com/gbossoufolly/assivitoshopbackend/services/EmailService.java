@@ -1,6 +1,7 @@
 package com.gbossoufolly.assivitoshopbackend.services;
 
 import com.gbossoufolly.assivitoshopbackend.exceptions.EmailFailureException;
+import com.gbossoufolly.assivitoshopbackend.models.LocalUser;
 import com.gbossoufolly.assivitoshopbackend.models.VerificationToken;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
@@ -39,5 +40,13 @@ public class EmailService {
         }catch(MailException exception){
             throw new EmailFailureException();
         }
+    }
+
+    public void sendPasswordResetEmail(LocalUser user, String token) {
+        SimpleMailMessage message = makeMailMessage();
+        message.setTo(user.getEmail());
+        message.setSubject("Your password reset request link");
+        message.setText("You requested a password reset on our website. Please, find the link below" +
+                "to be able to reset your password. \n " + url + "/auth/reset?token=" + token);
     }
 }

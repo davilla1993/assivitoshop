@@ -23,7 +23,7 @@ public class RegistrationBody {
 
     @NotNull(message = "Password is required")
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "At least 3 characters are required")
+    @Size(min = 6, message = "At least 6 characters are required")
     private String password;
 
     @NotNull(message = "First name is required")

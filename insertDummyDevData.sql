@@ -1,11 +1,10 @@
 -- Script to insert dummy dev data into the database.
 
 -- You first need to register two users into the system before running this scirpt.
-DELETE FROM web_order_quantities;
-DELETE FROM web_order;
-DELETE FROM inventory;
-DELETE FROM product;
-DELETE FROM address;
+
+INSERT INTO local_user (email, first_name, last_name, password, username, email_verified)
+    VALUES ('folly@gmail.com', 'Folly', 'Sitou', '$2a$10$hBn5gu6cGelJNiE6DDsaBOmZgyumCSzVwrOK/37FWgJ6aLIdZSSI2', 'Folly', true)
+    , ('esther@gmail.com', 'Esther', 'Lee', '$2a$10$TlYbg57fqOy/1LJjispkjuSIvFJXbh3fy0J9fvHnCpuntZOITAjVG', 'Esther', false);
 
 INSERT INTO product (name, short_description, long_description, price) VALUES ('Product #1', 'Product one short description.', 'This is a very long description of product #1.', 5.50);
 INSERT INTO product (name, short_description, long_description, price) VALUES ('Product #2', 'Product two short description.', 'This is a very long description of product #2.', 10.56);

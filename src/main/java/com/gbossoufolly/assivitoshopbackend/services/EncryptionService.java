@@ -10,7 +10,6 @@ public class EncryptionService {
 
     @Value("${encryption.salt.rounds}")
     private int saltRounds;
-
     private String salt;
     @PostConstruct
     public void postConstruct() {

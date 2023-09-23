@@ -19,7 +19,7 @@ public class VerificationToken {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "token", nullable = false, unique = true, length = 2500)
+    @Column(name = "token", nullable = false, unique = true, length = 400)
     private String token;
 
     @Column(name = "created_timestamp", nullable = false)

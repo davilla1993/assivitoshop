@@ -2,8 +2,10 @@ package com.gbossoufolly.assivitoshopbackend.api.controllers.auth;
 
 import com.gbossoufolly.assivitoshopbackend.api.models.LoginBody;
 import com.gbossoufolly.assivitoshopbackend.api.models.LoginResponse;
+import com.gbossoufolly.assivitoshopbackend.api.models.PasswordResetBody;
 import com.gbossoufolly.assivitoshopbackend.api.models.RegistrationBody;
 import com.gbossoufolly.assivitoshopbackend.exceptions.EmailFailureException;
+import com.gbossoufolly.assivitoshopbackend.exceptions.EmailNotFoundException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserAlreadyExistsException;
 import com.gbossoufolly.assivitoshopbackend.exceptions.UserNotVerifiedException;
 import com.gbossoufolly.assivitoshopbackend.models.LocalUser;
@@ -79,7 +81,22 @@ public class AuthenticationController {
     }
     @GetMapping("/me")
     public LocalUser getLoggedInUserProfile(@AuthenticationPrincipal LocalUser user) {
-
         return user;
+    }
+
+    @PostMapping("/forgot")
+    public ResponseEntity forgotPassword(@RequestParam String email) {
+        try {
+            userService.forgotPassword(email);
+            return ResponseEntity.ok().build();
+        } catch (EmailNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity resetPassword(@Valid @RequestBody PasswordResetBody body) {
+        userService.resetPassword(body);
+        return ResponseEntity.ok().build();
     }
 }
