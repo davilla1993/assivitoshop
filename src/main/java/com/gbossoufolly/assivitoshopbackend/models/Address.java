@@ -2,7 +2,6 @@ package com.gbossoufolly.assivitoshopbackend.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jdk.jfr.Enabled;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
