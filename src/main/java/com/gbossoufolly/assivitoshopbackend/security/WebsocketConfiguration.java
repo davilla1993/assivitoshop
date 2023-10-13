@@ -1,19 +1,30 @@
 package com.gbossoufolly.assivitoshopbackend.security;
 
+import com.gbossoufolly.assivitoshopbackend.models.LocalUser;
+import com.gbossoufolly.assivitoshopbackend.services.UserService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.security.authorization.AuthorizationEventPublisher;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.SpringAuthorizationEventPublisher;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.messaging.access.intercept.AuthorizationChannelInterceptor;
 import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+import java.util.Map;
+import java.util.Optional;
 
 @Configuration
 @EnableWebSocket
@@ -21,8 +32,18 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer {
 
     private final ApplicationContext context;
-    public WebsocketConfiguration(ApplicationContext context) {
+
+    private final JWTRequestFilter jwtRequestFilter;
+
+    private final UserService userService;
+
+    private static final AntPathMatcher MATCHER = new AntPathMatcher();
+
+    public WebsocketConfiguration(ApplicationContext context, JWTRequestFilter jwtRequestFilter,
+                                  UserService userService) {
         this.context = context;
+        this.jwtRequestFilter = jwtRequestFilter;
+        this.userService = userService;
     }
 
     @Override
@@ -53,6 +74,58 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
         registration.interceptors(authInterceptor);
         AuthorizationEventPublisher publisher = new SpringAuthorizationEventPublisher(context);
         authInterceptor.setAuthorizationEventPublisher(publisher);
-        registration.interceptors(authInterceptor);
+        registration.interceptors(jwtRequestFilter ,authInterceptor,
+                new RejectClientMessagesOnChannelInterceptor(),
+                new DestinationLevelAuthorizationChannelInterceptor());
+    }
+
+    private String[] paths = new String[] {
+        "/topic/user/*/address"
+    };
+
+    private class RejectClientMessagesOnChannelInterceptor implements ChannelInterceptor {
+        @Override
+        public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            if(message.getHeaders().get("simpMessageType").equals(SimpMessageType.MESSAGE)){
+                String destination = (String) message.getHeaders().get("simpDestination");
+                for(String path: paths) {
+                    if(MATCHER.match(path, destination)) {
+                        message = null;
+                    }
+                }
+            }
+            return message;
+        }
+    }
+
+    private class DestinationLevelAuthorizationChannelInterceptor implements ChannelInterceptor {
+        @Override
+        public Message<?> preSend(Message<?> message, MessageChannel channel) {
+            if (message.getHeaders().get("simpMessageType").equals(SimpMessageType.SUBSCRIBE)) {
+                String destination = (String) message.getHeaders().get(
+                        "simpDestination");
+                String userTopicMatcher = "/topic/user/{userId}/**";
+                if (MATCHER.match(userTopicMatcher, destination)) {
+                    Map<String, String> params = MATCHER.extractUriTemplateVariables(
+                            userTopicMatcher, destination);
+                    try {
+                        Long userId = Long.valueOf(params.get("userId"));
+                        Authentication authentication =
+                                SecurityContextHolder.getContext().getAuthentication();
+                        if (authentication != null) {
+                            LocalUser user = (LocalUser) authentication.getPrincipal();
+                            if (!userService.userHasPermissionToUser(user, userId)) {
+                                message = null;
+                            }
+                        } else {
+                            message = null;
+                        }
+                    } catch (NumberFormatException ex) {
+                        message = null;
+                    }
+                }
+            }
+            return message;
+        }
     }
 }

@@ -14,7 +14,6 @@ import java.util.List;
 @Table(name = "local_user")
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class LocalUser implements UserDetails {

@@ -127,4 +127,8 @@ public class UserService {
             localUserRepository.save(user);
         }
     }
+
+    public boolean userHasPermissionToUser(LocalUser user, Long id) {
+        return user.getId() == id;
+    }
 }
